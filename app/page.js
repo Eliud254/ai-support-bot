@@ -1,117 +1,140 @@
 "use client";
-import { Box, Stack, Button, TextField } from "@mui/material";
+import { Box, Stack, Button, TextField, Typography } from "@mui/material";
 import { useState } from "react";
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#00ffff',
+    },
+    background: {
+      default: '#121212',
+      paper: '#1e1e1e',
+    },
+  },
+});
 
 export default function Home() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `Hi, I'm the SpareShare Support Agent, how can I aassist you today?`,
+      content: `Hi, I'm the SpareShare Support Agent, how can I assist you today?`,
     },
   ]);
-
   const [message, setMessage] = useState("");
 
   const sendMessage = async () => {
-    setMessages(""); // Clear the input fiels
-    setMessages((messages) => [
-      ...messages,
+    if (!message.trim()) return;
+    
+    setMessages((prevMessages) => [
+      ...prevMessages,
       { role: "user", content: message },
       { role: "assistant", content: "" },
     ]);
+    const userMessage = message;
+    setMessage("");
 
     // Send the message to the server
-    const response = fetch("/api/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify([...messages, { role: "user", content: message }]),
-    }).then(async (res) => {
-      const reader = res.body.getReader(); // Get a reader to read the response body
-      const decoder = new TextDecoder(); // Create a decoder to decode the response text
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify([...messages, { role: "user", content: userMessage }]),
+      });
 
-      let result = "";
-      // Function to process the text from the response
-      return reader.read().then(function processText({ done, value }) {
-        if (done) {
-          return result;
-        }
-        const text = decoder.decode(value || new Uint8Array(), {
-          stream: true,
-        }); // Decode the text
-        setMessages((messages) => {
-          let lastMessage = messages[messages.length - 1];
-          let otherMessages = messages.slice(0, messages.length - 1);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value, { stream: true });
+        setMessages((prevMessages) => {
+          const lastMessage = prevMessages[prevMessages.length - 1];
+          const updatedMessages = prevMessages.slice(0, -1);
           return [
-            ...otherMessages,
+            ...updatedMessages,
             { ...lastMessage, content: lastMessage.content + text },
           ];
         });
-        return reader.read().then(processText);
-      });
-    });
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   return (
-    <Box
-      width="100vw"
-      height="100vh"
-      display="flex"
-      flexDirection="column"
-      justifyContent="center"
-      alignItems="center"
-    >
-      <Stack
-        direction={"column"}
-        width="500px"
-        height="700px"
-        border="1px solid black"
-        p={2}
-        spacing={3}
+    <ThemeProvider theme={darkTheme}>
+      <Box
+        width="100vw"
+        height="100vh"
+        display="flex"
+        flexDirection="column"
+        justifyContent="center"
+        alignItems="center"
+        bgcolor="background.default"
       >
-        <Stack
-          direction={"column"}
-          spacing={2}
-          flexGrow={1}
-          overflow="auto"
-          maxHeight="100%"
+        <Typography variant="h4" component="h1" gutterBottom color="primary">
+          SpareShare Support Agent
+        </Typography>
+        <Box
+          width="90%"
+          maxWidth="500px"
+          height="70vh"
+          bgcolor="background.paper"
+          borderRadius={2}
+          boxShadow={3}
+          p={2}
+          display="flex"
+          flexDirection="column"
         >
-          {messages.map((message, index) => (
-            <Box
-              key={index}
-              display="flex"
-              justifyContent={
-                message.role === "assistant" ? "flex-start" : "flex-end"
-              }
-            >
+          <Stack
+            direction="column"
+            spacing={2}
+            flexGrow={1}
+            overflow="auto"
+            mb={2}
+          >
+            {messages.map((message, index) => (
               <Box
-                bgcolor={
-                  message.role === "assistant"
-                    ? "primary.main"
-                    : "secondary.main"
+                key={index}
+                display="flex"
+                justifyContent={
+                  message.role === "assistant" ? "flex-start" : "flex-end"
                 }
-                color="white"
-                borderRadius={16}
-                p={3}
               >
-                {message.content}
+                <Box
+                  bgcolor={message.role === "assistant" ? "primary.main" : "secondary.main"}
+                  color="background.paper"
+                  borderRadius={2}
+                  p={1}
+                  maxWidth="80%"
+                >
+                  <Typography variant="body2">{message.content}</Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
-        </Stack>
-        <Stack direction={"row"} spacing={2}>
-          <TextField
-            label="Message"
-            fullWidth
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <Button variant="contained" onClick={sendMessage}>
-            Send
-          </Button>
-        </Stack>
-      </Stack>
-    </Box>
+            ))}
+          </Stack>
+          <Stack direction="row" spacing={1}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              placeholder="Type your message..."
+            />
+            <Button variant="contained" onClick={sendMessage} color="primary">
+              Send
+            </Button>
+          </Stack>
+        </Box>
+      </Box>
+    </ThemeProvider>
   );
 }
