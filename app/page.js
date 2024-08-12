@@ -1,17 +1,17 @@
 "use client";
 import { Box, Stack, Button, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 
 const darkTheme = createTheme({
   palette: {
-    mode: 'dark',
+    mode: "dark",
     primary: {
-      main: '#00ffff',
+      main: "#00ffff",
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: "#121212",
+      paper: "#1e1e1e",
     },
   },
 });
@@ -27,7 +27,7 @@ export default function Home() {
 
   const sendMessage = async () => {
     if (!message.trim()) return;
-    
+
     setMessages((prevMessages) => [
       ...prevMessages,
       { role: "user", content: message },
@@ -43,7 +43,10 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify([...messages, { role: "user", content: userMessage }]),
+        body: JSON.stringify([
+          ...messages,
+          { role: "user", content: userMessage },
+        ]),
       });
 
       const reader = response.body.getReader();
@@ -108,7 +111,11 @@ export default function Home() {
                 }
               >
                 <Box
-                  bgcolor={message.role === "assistant" ? "primary.main" : "secondary.main"}
+                  bgcolor={
+                    message.role === "assistant"
+                      ? "primary.main"
+                      : "secondary.main"
+                  }
                   color="background.paper"
                   borderRadius={2}
                   p={1}
@@ -126,7 +133,7 @@ export default function Home() {
               size="small"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              onKeyPress={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type your message..."
             />
             <Button variant="contained" onClick={sendMessage} color="primary">
