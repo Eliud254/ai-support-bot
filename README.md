@@ -2,6 +2,12 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
+In order to set up the project, you need to add a env.local file in the main project folder. It should contain your openai api
+key like this:
+OPENAI_API_KEY=_insert api key_
+
+Then install all required dependencies using npn install on the project terminal.
+
 First, run the development server:
 
 ```bash
